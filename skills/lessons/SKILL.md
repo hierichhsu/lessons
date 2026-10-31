@@ -15,7 +15,7 @@ Read only the sections that match the task: **General**, **This machine**, and t
 
 ## When a command fails
 
-If the failure hook (`lessons.mjs`) attaches matching entries to the error, apply their "Do" before retrying.
+If the failure hook (`lessons.mjs`) attaches matching entries to the error, apply their "Do" before retrying. If it says an entry already matched earlier in this session, its "Do" did not prevent the repeat: do not apply it again. Find the real cause, fix it, then rewrite that entry's cause and "Do".
 
 If the same error comes back a third time in one task, stop editing. Search the log for its text, then try a materially different hypothesis: re-read what the error actually asks for, consider another file or root cause than the one you keep changing, and check the new hypothesis before the next edit. If that fails too, tell the user what you tried and ask; do not keep retrying.
 
@@ -33,16 +33,17 @@ Rules:
 - Write the cause only as far as the evidence goes. If you changed several things at once and do not know which one fixed it, name what is confirmed or write "cause unconfirmed"; a guessed cause misleads every later session.
 - Aim the "Do" at the kind of situation, so it fires on the next project too: not "be careful with paths" (too vague), not "line 42 of auth.ts" (never recurs). Facts true of one project only go in that project's section.
 - Never write an entry that tells a later session to skip a test, a check, or verification.
-- Before adding, search for an existing entry on the same thing and sharpen it instead of duplicating. Edit the log in place, never rewrite the whole file: other sessions write to it too.
+- Before adding, run `node <this folder>/lessons.mjs check "<the draft entry>"`: it lists existing entries that quote the same text. Sharpen one of those (or fix it if the new finding contradicts it) instead of adding a second. Edit the log in place, never rewrite the whole file: other sessions write to it too.
 - If an entry turns out wrong or the cause is gone (dependency upgraded, tool installed), fix or delete it.
-- Keep each section under 25 entries. When one is over, merge entries that share a cause, delete ones whose cause is gone, or promote, before adding more.
+- Keep each section under 25 entries. When one is over, merge entries that share a cause, delete ones whose cause is gone, or promote, before adding more. The SessionStart hook prints a warning when a section is over the cap or a section header appears twice; act on it in that session.
+- An entry that is 30+ days old with no hit, or that quotes no error text, cannot prove itself through the hook. At each `/lessons` review give every such entry one of three fates: promote it, rewrite its symptom with the exact error text so the hook can match it, or delete it. "Keep and see" is not an option.
 - No secrets, tokens, customer data, or personal names.
 
 ## Promote
 
-Each time the failure hook matches an entry, it appends a line to `hits.jsonl` next to the log. `node <this folder>/lessons.mjs stats` lists hits per entry, the entries to promote, and the entries the hook can never match.
+Each time the failure hook matches an entry, it appends a line to `hits.jsonl` next to the log. `node <this folder>/lessons.mjs stats` lists hits per entry, the entries to review (hit twice in one session: the "Do" did not work), the entries to promote (hit in 2+ sessions), stale entries (30+ days, 0 hits), the entries the hook can never match, and sections over the cap.
 
-Promote an entry when it has 2+ hits, or at once when it is a fact every session on this machine needs. Pick the target by what the entry is about:
+Promote an entry when it was hit in 2+ different sessions, or at once when it is a fact every session on this machine needs. An entry under Review is never promoted as is: rewrite it first. Pick the target by what the entry is about:
 
 | Entry | Claude Code target | Codex / others |
 |---|---|---|
@@ -56,6 +57,6 @@ Promoting changes what every later session loads, so propose the list (entry, ta
 
 ## /lessons
 
-- `/lessons`: review the current conversation for mistakes not yet logged. Log only those with a concrete before and after: what failed, what changed, what then worked. If none qualifies, say so and add nothing. Then run `stats` and propose any promotions.
+- `/lessons`: review the current conversation for mistakes not yet logged. Log only those with a concrete before and after: what failed, what changed, what then worked. If none qualifies, say so and add nothing. Then run `stats`, propose any promotions, and resolve the stale and unmatchable entries it lists (promote, add the error quote, or delete).
 - `/lessons <text>`: log that text as an entry.
 - `/lessons stats`: run `stats` and show it.
